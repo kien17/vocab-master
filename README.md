@@ -296,7 +296,7 @@ MIT License
 
 ## 👨‍💻 Author
 
-Xây dựng bởi **Senior Full-Stack Developer**
+Xây dựng bởi **Nguyễn Trần Trung Kiên**
 
 ---
 
