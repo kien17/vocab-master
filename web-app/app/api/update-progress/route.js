@@ -26,7 +26,7 @@ export async function POST(request) {
       .from('user_progress')
       .update({
         learning_level: nextLevel,
-        next_review_date: nextReviewDate.toISOString(),
+        next_review_date: nextReviewDate,
         updated_at: new Date().toISOString()
       })
       .eq('id', user_progress_id)
