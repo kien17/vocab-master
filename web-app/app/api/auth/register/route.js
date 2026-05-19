@@ -15,13 +15,26 @@ export async function POST(request) {
       );
     }
 
-    const { data: existingUser } = await supabase
+    const { data: existingByEmail } = await supabase
       .from('users')
       .select('id')
-      .or(`email.eq.${email.toLowerCase()},username.eq.${username.trim()}`)
+      .eq('email', email.toLowerCase())
       .maybeSingle();
 
-    if (existingUser) {
+    if (existingByEmail) {
+      return NextResponse.json(
+        { error: 'Email hoặc tên người dùng đã tồn tại' },
+        { status: 400 }
+      );
+    }
+
+    const { data: existingByUsername } = await supabase
+      .from('users')
+      .select('id')
+      .eq('username', username.trim())
+      .maybeSingle();
+
+    if (existingByUsername) {
       return NextResponse.json(
         { error: 'Email hoặc tên người dùng đã tồn tại' },
         { status: 400 }
