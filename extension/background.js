@@ -3,7 +3,7 @@
  * Manifest V3
  */
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'https://vocab-master-h3dzlft7x-kiens-projects-fbe03685.vercel.app';
 const SELECTED_TEXT_STORAGE_KEY = 'selectedSearchText';
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -44,7 +44,7 @@ async function sendMessageToTab(tabId, message) {
 
 async function getAppUserId() {
   try {
-    const tabs = await chrome.tabs.query({ url: 'http://localhost:3000/*' });
+    const tabs = await chrome.tabs.query({ url: 'https://vocab-master-h3dzlft7x-kiens-projects-fbe03685.vercel.app/*' });
     for (const tab of tabs) {
       const response = await sendMessageToTab(tab.id, { action: 'getUserId' });
       if (response?.userId) {

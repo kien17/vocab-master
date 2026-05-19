@@ -1,4 +1,4 @@
-﻿const API_BASE_URL = 'http://localhost:3000';
+﻿const API_BASE_URL = 'https://vocab-master-h3dzlft7x-kiens-projects-fbe03685.vercel.app';
 const SELECTED_TEXT_STORAGE_KEY = 'selectedSearchText';
 
 function storageGet(keys) {
