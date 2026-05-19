@@ -1,0 +1,284 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vocab Master</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 400px;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #f8fafc;
+      color: #333;
+    }
+
+    .container {
+      padding: 12px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #3b82f6;
+    }
+
+    .header-link {
+      font-size: 11px;
+      color: #6b7280;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .header-link:hover { color: #3b82f6; }
+
+    .search-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .search-bar input {
+      flex: 1;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 13px;
+      outline: none;
+    }
+    .search-bar input:focus { border-color: #3b82f6; }
+
+    .search-bar button {
+      border: none;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-search { background: #3b82f6; color: white; }
+    .btn-search:hover { background: #2563eb; }
+    .btn-add { background: #10b981; color: white; }
+    .btn-add:hover { background: #059669; }
+
+    .result-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: white;
+    }
+
+    .result-card .word-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .result-card .word-row .word {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .result-card .badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: #fef3c7;
+      color: #92400e;
+      font-weight: 600;
+    }
+
+    .result-card .phonetic {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+
+    .result-card .meaning-main {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 4px;
+    }
+
+    .result-card .meanings-list {
+      margin: 6px 0;
+    }
+    .result-card .meanings-list .m-item {
+      font-size: 11px;
+      color: #4b5563;
+      padding: 2px 0;
+    }
+    .result-card .meanings-list .m-item .pos {
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #3b82f6;
+    }
+    .result-card .meanings-list .m-item .pos.short { color: #059669; }
+
+    .result-card .example {
+      font-size: 11px;
+      font-style: italic;
+      color: #6b7280;
+      margin: 4px 0;
+    }
+
+    .result-card .actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .result-card .actions .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-save { background: #eef2ff; color: #4338ca; }
+    .btn-save:hover { background: #dde4ff; }
+    .btn-audio { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+    .btn-audio:hover { background: #e5e7eb; }
+
+    .last-saved {
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: #eef2ff;
+      border-left: 3px solid #3b82f6;
+      font-size: 11px;
+      color: #1e3a5f;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .last-saved .word { font-weight: 700; }
+    .last-saved .time { color: #6b7280; font-size: 10px; }
+
+    .manual-toggle {
+      text-align: center;
+      margin: 8px 0;
+    }
+    .manual-toggle button {
+      border: none;
+      background: none;
+      color: #6b7280;
+      font-size: 11px;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+    .manual-toggle button:hover { color: #3b82f6; }
+
+    .manual-form {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      background: white;
+      margin-bottom: 10px;
+    }
+    .manual-form.hidden { display: none; }
+
+    .manual-form .field {
+      margin-bottom: 8px;
+    }
+    .manual-form .field label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      color: #2563eb;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .manual-form .field input,
+    .manual-form .field textarea {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      outline: none;
+    }
+    .manual-form .field textarea { min-height: 50px; resize: vertical; }
+    .manual-form .field input:focus,
+    .manual-form .field textarea:focus { border-color: #3b82f6; }
+
+    .status {
+      display: none;
+      padding: 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      text-align: center;
+      margin-top: 8px;
+    }
+    .status.show { display: block; }
+    .status.success { background: #dcfce7; color: #166534; }
+    .status.error { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Vocab Master</h1>
+      <span class="header-link" id="openAppBtn">Mở web →</span>
+    </div>
+
+    <div id="lastSaved" class="last-saved" style="display:none;"></div>
+
+    <div class="search-bar">
+      <input id="searchQuery" type="text" placeholder="Nhập từ hoặc cụm từ..." autofocus />
+      <button id="searchBtn" class="btn-search">Tra</button>
+      <button id="quickAddBtn" class="btn-add">+</button>
+    </div>
+
+    <div id="searchResults"></div>
+
+    <div class="manual-toggle">
+      <button id="toggleManualBtn">+ Thêm thủ công</button>
+    </div>
+
+    <div id="manualForm" class="manual-form hidden">
+      <div class="field">
+        <label for="word">Từ / cụm từ</label>
+        <input id="word" type="text" placeholder="Ví dụ: aberration" />
+      </div>
+      <div class="field">
+        <label for="phonetic">Phiên âm</label>
+        <input id="phonetic" type="text" placeholder="/ˌæbəˈreɪʃn/" />
+      </div>
+      <div class="field">
+        <label for="meaning">Nghĩa</label>
+        <textarea id="meaning" placeholder="Nhập nghĩa ngắn gọn"></textarea>
+      </div>
+      <div class="field">
+        <label for="example">Câu ví dụ</label>
+        <textarea id="example" placeholder="Ví dụ: The aberration was obvious..."></textarea>
+      </div>
+      <button id="manualSaveBtn" class="btn-search" style="width:100%;padding:9px;">Lưu từ</button>
+    </div>
+
+    <div id="status" class="status"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

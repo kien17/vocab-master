@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Vocab Master - Lưu từ vựng IELTS",
+  "version": "1.0.0",
+  "description": "Lưu cụm từ từ bất kỳ trang web nào để học từ vựng IELTS chuẩn.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "contextMenus",
+    "notifications",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Vocab Master"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}

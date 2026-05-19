@@ -1,0 +1,75 @@
+services:
+  # ========================================
+  # PostgreSQL Database
+  # ========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: vocab-master-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: vocab_master
+      TZ: UTC
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vocab-network
+
+  # ========================================
+  # Next.js Web Application (Development)
+  # ========================================
+  web:
+    build:
+      context: ./web-app
+      dockerfile: Dockerfile.dev
+    container_name: vocab-master-web
+    restart: unless-stopped
+    environment:
+      # Supabase URLs (Local/Test)
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:3000
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvY2FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NzA5NjIwMDAsImV4cCI6MTk5OTk5OTk5OX0.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvY2FsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY3MDk2MjAwMCwiZXhwIjoxOTk5OTk5OTk5fQ.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      
+      # Gemini API (Optional - uncomment và set nếu muốn)
+      # GEMINI_API_KEY: ${GEMINI_API_KEY}
+      
+      # Database connection
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/vocab_master
+      
+      # Next.js config
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Hot reload - bind mount source code
+      - ./web-app:/app
+      # Keep dependencies inside Docker-managed volume to preserve Linux-native modules
+      - node_modules:/app/node_modules
+    networks:
+      - vocab-network
+    # Giữ container chạy
+    stdin_open: true
+    tty: true
+
+volumes:
+  postgres_data:
+    driver: local
+  node_modules:
+    driver: local
+
+networks:
+  vocab-network:
+    driver: bridge
