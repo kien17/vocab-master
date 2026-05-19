@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { query } from '../../../../lib/db';
+import { supabase } from '../../../../lib/supabase';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
@@ -15,19 +15,21 @@ export async function POST(request) {
       );
     }
 
-    const userResult = await query(
-      'SELECT id, username, email, password_hash FROM users WHERE email = $1',
-      [email.toLowerCase()]
-    );
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, username, email, password_hash')
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
 
-    if (userResult.rows.length === 0) {
+    if (error) throw error;
+
+    if (!user) {
       return NextResponse.json(
         { error: 'Email hoặc mật khẩu không đúng' },
         { status: 401 }
       );
     }
 
-    const user = userResult.rows[0];
     const isValid = bcrypt.compareSync(password, user.password_hash);
 
     if (!isValid) {

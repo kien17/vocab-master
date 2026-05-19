@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { query } from '../../../lib/db';
+import { supabase } from '../../../lib/supabase';
 import { generateVocabularyData, fetchDictionaryPronunciation, fetchVietnameseTranslation } from '../../../lib/gemini';
 
 export async function GET(request) {
@@ -16,18 +16,26 @@ export async function GET(request) {
       );
     }
 
-    const exactResult = await query(
-      `SELECT v.id, v.word, v.phonetic, v.meaning, v.example_sentence, v.cloze_sentence,
-              v.audio_us, v.audio_uk, up.learning_level
-       FROM vocabulary v
-       LEFT JOIN user_progress up ON up.vocab_id = v.id
-       WHERE LOWER(v.word) = LOWER($1)
-       LIMIT 1`,
-      [searchTerm]
-    );
+    const { data: exactResult } = await supabase
+      .from('vocabulary')
+      .select('*, user_progress(learning_level)')
+      .ilike('word', searchTerm)
+      .limit(1)
+      .maybeSingle();
 
-    if (exactResult.rows.length > 0) {
-      return NextResponse.json({ success: true, results: exactResult.rows }, { status: 200 });
+    if (exactResult) {
+      const row = {
+        id: exactResult.id,
+        word: exactResult.word,
+        phonetic: exactResult.phonetic,
+        meaning: exactResult.meaning,
+        example_sentence: exactResult.example_sentence,
+        cloze_sentence: exactResult.cloze_sentence,
+        audio_us: exactResult.audio_us,
+        audio_uk: exactResult.audio_uk,
+        learning_level: exactResult.user_progress?.[0]?.learning_level || 0
+      };
+      return NextResponse.json({ success: true, results: [row] }, { status: 200 });
     }
 
     const translatedMeaning = await fetchVietnameseTranslation(searchTerm).catch(() => null);

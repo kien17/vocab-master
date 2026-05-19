@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { query } from '../../../../lib/db';
+import { supabase } from '../../../../lib/supabase';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
@@ -15,12 +15,13 @@ export async function POST(request) {
       );
     }
 
-    const existingUser = await query(
-      'SELECT id FROM users WHERE email = $1 OR username = $2',
-      [email.toLowerCase(), username.trim()]
-    );
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .or(`email.eq.${email.toLowerCase()},username.eq.${username.trim()}`)
+      .maybeSingle();
 
-    if (existingUser.rows.length > 0) {
+    if (existingUser) {
       return NextResponse.json(
         { error: 'Email hoặc tên người dùng đã tồn tại' },
         { status: 400 }
@@ -29,14 +30,19 @@ export async function POST(request) {
 
     const passwordHash = bcrypt.hashSync(password, 10);
 
-    const result = await query(
-      `INSERT INTO users (username, email, password_hash, created_at, updated_at)
-       VALUES ($1, $2, $3, NOW(), NOW())
-       RETURNING id, username, email`,
-      [username.trim(), email.toLowerCase(), passwordHash]
-    );
+    const { data: user, error } = await supabase
+      .from('users')
+      .insert({
+        username: username.trim(),
+        email: email.toLowerCase(),
+        password_hash: passwordHash,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select('id, username, email')
+      .single();
 
-    const user = result.rows[0];
+    if (error) throw error;
 
     return NextResponse.json({ success: true, user }, { status: 201 });
   } catch (error) {

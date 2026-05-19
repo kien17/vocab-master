@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { query } from '../../../lib/db';
+import { supabase } from '../../../lib/supabase';
 import { calculateNextReview } from '../../../lib/spaced-repetition';
 
 export async function POST(request) {
@@ -22,17 +22,18 @@ export async function POST(request) {
 
     const { nextLevel, nextReviewDate } = calculateNextReview(current_level, difficulty);
 
-    const updateResult = await query(
-      `UPDATE user_progress
-       SET learning_level = $1,
-           next_review_date = $2,
-           updated_at = NOW()
-       WHERE id = $3
-       RETURNING *`,
-      [nextLevel, nextReviewDate, user_progress_id]
-    );
+    const { data: updatedProgress, error } = await supabase
+      .from('user_progress')
+      .update({
+        learning_level: nextLevel,
+        next_review_date: nextReviewDate.toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user_progress_id)
+      .select()
+      .single();
 
-    const updatedProgress = updateResult.rows[0];
+    if (error) throw error;
 
     return NextResponse.json(
       {

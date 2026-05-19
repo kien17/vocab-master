@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { query } from '../../../lib/db';
+import { supabase } from '../../../lib/supabase';
 
 export async function GET(request) {
   try {
@@ -15,49 +15,39 @@ export async function GET(request) {
       );
     }
 
-    const todayResult = await query(
-      `SELECT
-         up.id,
-         up.learning_level,
-         up.next_review_date,
-         v.id AS vocab_id,
-         v.word,
-         v.phonetic,
-         v.meaning,
-         v.example_sentence,
-         v.cloze_sentence
-       FROM user_progress up
-       JOIN vocabulary v ON up.vocab_id = v.id
-       WHERE up.user_id = $1
-         AND up.next_review_date <= NOW()
-       ORDER BY up.next_review_date ASC`,
-      [userId]
-    );
+    const { data: todayWords, error } = await supabase
+      .from('user_progress')
+      .select('*, vocabulary(*)')
+      .eq('user_id', userId)
+      .lte('next_review_date', new Date().toISOString())
+      .order('next_review_date', { ascending: true });
 
-    const todayWords = todayResult.rows.map((row) => ({
+    if (error) throw error;
+
+    const mapped = (todayWords || []).map((row) => ({
       id: row.id,
       learning_level: row.learning_level,
       next_review_date: row.next_review_date,
       vocabulary: {
         id: row.vocab_id,
-        word: row.word,
-        phonetic: row.phonetic,
-        meaning: row.meaning,
-        example_sentence: row.example_sentence,
-        cloze_sentence: row.cloze_sentence
+        word: row.vocabulary?.word,
+        phonetic: row.vocabulary?.phonetic,
+        meaning: row.vocabulary?.meaning,
+        example_sentence: row.vocabulary?.example_sentence,
+        cloze_sentence: row.vocabulary?.cloze_sentence
       }
     }));
 
-    const allResult = await query(
-      'SELECT learning_level FROM user_progress WHERE user_id = $1',
-      [userId]
-    );
+    const { data: allProgress } = await supabase
+      .from('user_progress')
+      .select('learning_level')
+      .eq('user_id', userId);
 
     return NextResponse.json(
       {
         success: true,
-        words_for_today: todayWords,
-        all_progress: allResult.rows || []
+        words_for_today: mapped,
+        all_progress: allProgress || []
       },
       { status: 200 }
     );

@@ -1,23 +1,8 @@
-import pkg from 'pg';
-const { Pool } = pkg;
+import { supabase } from './supabase';
 
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
-  throw new Error('Missing DATABASE_URL environment variable');
-}
-
-export const pool = new Pool({
-  connectionString,
-  ssl: { rejectUnauthorized: false },
-});
-
-export async function query(text, params) {
-  const client = await pool.connect();
-  try {
-    const result = await client.query(text, params);
-    return result;
-  } finally {
-    client.release();
-  }
+export async function query(sql, params = []) {
+  const { data, error } = await supabase
+    .rpc('exec_sql', { query_text: sql, query_params: params });
+  if (error) throw error;
+  return { rows: data || [] };
 }

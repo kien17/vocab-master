@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { query } from '../../../lib/db';
+import { supabase } from '../../../lib/supabase';
 
 function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -30,53 +30,69 @@ export async function POST(request) {
     const regex = new RegExp(escapeRegExp(normalizedWord), 'gi');
     const clozeText = cloze_sentence?.trim() || exampleText.replace(regex, '___');
 
-    const existing = await query(
-      'SELECT * FROM vocabulary WHERE word = $1',
-      [normalizedWord]
-    );
+    const { data: existingVocab } = await supabase
+      .from('vocabulary')
+      .select('*')
+      .eq('word', normalizedWord)
+      .maybeSingle();
 
-    if (existing.rows.length > 0) {
-      const existingVocabulary = existing.rows[0];
-
+    if (existingVocab) {
       if (userId) {
-        await query(
-          `INSERT INTO user_progress (user_id, vocab_id, learning_level, next_review_date, created_at, updated_at)
-           VALUES ($1, $2, 1, NOW(), NOW(), NOW())
-           ON CONFLICT (user_id, vocab_id) DO NOTHING`,
-          [userId, existingVocabulary.id]
-        );
+        await supabase
+          .from('user_progress')
+          .upsert({
+            user_id: userId,
+            vocab_id: existingVocab.id,
+            learning_level: 1,
+            next_review_date: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id,vocab_id', ignoreDuplicates: true });
       }
 
       return NextResponse.json(
         {
           success: true,
           message: 'Từ đã tồn tại trong kho từ vựng. Đã thêm vào tiến độ học của bạn nếu chưa có.',
-          vocabulary: existingVocabulary
+          vocabulary: existingVocab
         },
         { status: 200 }
       );
     }
 
-    const insertResult = await query(
-      `INSERT INTO vocabulary (word, phonetic, meaning, example_sentence, cloze_sentence, audio_us, audio_uk, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-       RETURNING *`,
-      [normalizedWord, phonetic || '', meaning, exampleText, clozeText, '', '']
-    );
+    const { data: newVocab, error: insertError } = await supabase
+      .from('vocabulary')
+      .insert({
+        word: normalizedWord,
+        phonetic: phonetic || '',
+        meaning,
+        example_sentence: exampleText,
+        cloze_sentence: clozeText,
+        audio_us: '',
+        audio_uk: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
-    const newVocabulary = insertResult.rows[0];
+    if (insertError) throw insertError;
 
     if (userId) {
-      await query(
-        `INSERT INTO user_progress (user_id, vocab_id, learning_level, next_review_date, created_at, updated_at)
-         VALUES ($1, $2, 1, NOW(), NOW(), NOW())
-         ON CONFLICT (user_id, vocab_id) DO NOTHING`,
-        [userId, newVocabulary.id]
-      );
+      await supabase
+        .from('user_progress')
+        .upsert({
+          user_id: userId,
+          vocab_id: newVocab.id,
+          learning_level: 1,
+          next_review_date: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id,vocab_id', ignoreDuplicates: true });
     }
 
     return NextResponse.json(
-      { success: true, vocabulary: newVocabulary },
+      { success: true, vocabulary: newVocab },
       { status: 201 }
     );
   } catch (error) {

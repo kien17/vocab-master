@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { query } from '../../../lib/db';
+import { supabase } from '../../../lib/supabase';
 
 export async function GET(request) {
   try {
@@ -15,27 +15,31 @@ export async function GET(request) {
       );
     }
 
-    const result = await query(
-      `SELECT up.id as progress_id,
-              v.id,
-              v.word,
-              v.phonetic,
-              v.meaning,
-              v.example_sentence,
-              v.cloze_sentence,
-              v.audio_us,
-              v.audio_uk,
-              up.learning_level
-       FROM user_progress up
-       JOIN vocabulary v ON v.id = up.vocab_id
-       WHERE up.user_id = $1
-       ORDER BY RANDOM()
-       LIMIT 12`,
-      [userId]
-    );
+    const { data: allWords, error } = await supabase
+      .from('user_progress')
+      .select('*, vocabulary(*)')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    const questions = (allWords || [])
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 12)
+      .map((row) => ({
+        progress_id: row.id,
+        id: row.vocab_id,
+        word: row.vocabulary?.word,
+        phonetic: row.vocabulary?.phonetic,
+        meaning: row.vocabulary?.meaning,
+        example_sentence: row.vocabulary?.example_sentence,
+        cloze_sentence: row.vocabulary?.cloze_sentence,
+        audio_us: row.vocabulary?.audio_us,
+        audio_uk: row.vocabulary?.audio_uk,
+        learning_level: row.learning_level
+      }));
 
     return NextResponse.json(
-      { success: true, questions: result.rows },
+      { success: true, questions },
       { status: 200 }
     );
   } catch (error) {
