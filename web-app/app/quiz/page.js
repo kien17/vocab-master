@@ -6,9 +6,7 @@ import axios from 'axios';
 import { playPhraseAudio } from '../../lib/audio';
 
 const QUESTION_TYPES = [
-  { id: 'fill', label: 'Điền từ' },
-  { id: 'choice', label: '4 lựa chọn' },
-  { id: 'listen', label: 'Nghe & điền' }
+  { id: 'choice', label: '4 lựa chọn' }
 ];
 
 function shuffleArray(arr) {
@@ -25,8 +23,7 @@ export default function QuizPage() {
   const [userId, setUserId] = useState(null);
   const [quizItems, setQuizItems] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [questionType, setQuestionType] = useState('fill');
-  const [answer, setAnswer] = useState('');
+  const [questionType, setQuestionType] = useState('choice');
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [feedback, setFeedback] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -60,6 +57,13 @@ export default function QuizPage() {
     loadQuiz();
   }, [userId]);
 
+  useEffect(() => {
+    if (currentQuestion) {
+      const url = currentQuestion.audio_us || currentQuestion.audio_uk || '';
+      playPhraseAudio(url, currentQuestion.word);
+    }
+  }, [currentQuestion]);
+
   const currentQuestion = quizItems[currentIndex] || null;
 
   const choices = useMemo(() => {
@@ -72,13 +76,9 @@ export default function QuizPage() {
   const handleSubmit = () => {
     if (!currentQuestion) return;
 
-    const normalizedAnswer = answer.trim().toLowerCase();
     const normalizedWord = currentQuestion.word.trim().toLowerCase();
     const selected = selectedChoice?.trim().toLowerCase();
-
-    const isCorrect = questionType === 'choice'
-      ? selected === normalizedWord
-      : normalizedAnswer === normalizedWord;
+    const isCorrect = selected === normalizedWord;
 
     if (isCorrect) {
       setFeedback('🎉 Chính xác!');
@@ -88,7 +88,6 @@ export default function QuizPage() {
   };
 
   const handleNext = () => {
-    setAnswer('');
     setSelectedChoice(null);
     setFeedback('');
     setCurrentIndex((prev) => (prev + 1) % quizItems.length);
@@ -105,7 +104,7 @@ export default function QuizPage() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Bài tập Vocab</h1>
-            <p className="text-slate-600 mt-2">Luyện tập điền từ, 4 lựa chọn và nghe điền.</p>
+            <p className="text-slate-600 mt-2">Luyện tập trắc nghiệm 4 lựa chọn.</p>
           </div>
           <div className="flex gap-3">
             <button
@@ -138,23 +137,6 @@ export default function QuizPage() {
             </div>
           ) : (
             <>
-              <div className="mb-6 flex flex-wrap gap-3">
-                {QUESTION_TYPES.map((type) => (
-                  <button
-                    key={type.id}
-                    onClick={() => {
-                      setQuestionType(type.id);
-                      setAnswer('');
-                      setSelectedChoice(null);
-                      setFeedback('');
-                    }}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${questionType === type.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
-                  >
-                    {type.label}
-                  </button>
-                ))}
-              </div>
-
               <div className="rounded-3xl border border-slate-200 p-6 mb-6">
                 <div className="flex flex-col gap-2 mb-4">
                   <p className="text-sm text-slate-500">Câu hỏi {currentIndex + 1} / {quizItems.length}</p>
@@ -178,17 +160,6 @@ export default function QuizPage() {
                     </div>
                   </div>
                 </div>
-                {questionType === 'fill' && (
-                  <div className="space-y-4">
-                    <p className="text-slate-600">{currentQuestion.cloze_sentence}</p>
-                    <input
-                      value={answer}
-                      onChange={(event) => setAnswer(event.target.value)}
-                      placeholder="Nhập đáp án vào đây"
-                      className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500"
-                    />
-                  </div>
-                )}
                 {questionType === 'choice' && (
                   <div className="grid gap-3 sm:grid-cols-2">
                     {choices.map((choice) => (
@@ -201,30 +172,6 @@ export default function QuizPage() {
                         {choice}
                       </button>
                     ))}
-                  </div>
-                )}
-                {questionType === 'listen' && (
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <button
-                        onClick={() => playWord(currentQuestion.audio_us)}
-                        className="rounded-2xl bg-indigo-600 px-6 py-4 text-white font-semibold hover:bg-indigo-700 text-lg"
-                      >
-                        🔊 Nghe từ (US)
-                      </button>
-                      <button
-                        onClick={() => playWord(currentQuestion.audio_uk)}
-                        className="ml-4 rounded-2xl bg-purple-600 px-6 py-4 text-white font-semibold hover:bg-purple-700 text-lg"
-                      >
-                        🔊 Nghe từ (UK)
-                      </button>
-                    </div>
-                    <input
-                      value={answer}
-                      onChange={(event) => setAnswer(event.target.value)}
-                      placeholder="Nhập từ bạn nghe thấy"
-                      className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 text-center text-lg"
-                    />
                   </div>
                 )}
               </div>

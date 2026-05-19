@@ -28,8 +28,7 @@ function formatTimeRemaining(dateStr) {
 
 export default function ReviewCard({ vocabulary, userProgress, allWords = [], onUpdate }) {
   const router = useRouter();
-  const [quizMode, setQuizMode] = useState('flashcard');
-  const [answer, setAnswer] = useState('');
+  const [quizMode, setQuizMode] = useState('choice');
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -67,17 +66,22 @@ export default function ReviewCard({ vocabulary, userProgress, allWords = [], on
         if (data) {
           setAudioUs(data.audio_us || '');
           setAudioUk(data.audio_uk || '');
+          const url = data.audio_us || data.audio_uk || '';
+          playPhraseAudio(url, vocabulary.word);
+        } else {
+          playPhraseAudio('', vocabulary.word);
         }
-      } catch { }
+      } catch {
+        playPhraseAudio('', vocabulary.word);
+      }
     };
     loadAudio();
-    setAnswer('');
     setSelectedChoice(null);
     setSubmitted(false);
     setIsCorrect(false);
     setRated(false);
     setNextReviewDate(null);
-    const modes = ['flashcard', 'fill', 'choice'];
+    const modes = ['choice', 'listen-choice'];
     setQuizMode(modes[Math.floor(Math.random() * modes.length)]);
   }, [vocabulary.word]);
 
@@ -86,14 +90,8 @@ export default function ReviewCard({ vocabulary, userProgress, allWords = [], on
   };
 
   const handleSubmitAnswer = () => {
-    const isFill = quizMode === 'fill' || quizMode === 'listen-fill';
-    if (isFill) {
-      const correct = answer.trim().toLowerCase() === vocabulary.word.trim().toLowerCase();
-      setIsCorrect(correct);
-    } else {
-      const correct = selectedChoice?.trim().toLowerCase() === vocabulary.word.trim().toLowerCase();
-      setIsCorrect(correct);
-    }
+    const correct = selectedChoice?.trim().toLowerCase() === vocabulary.word.trim().toLowerCase();
+    setIsCorrect(correct);
     setSubmitted(true);
   };
 
@@ -126,10 +124,7 @@ export default function ReviewCard({ vocabulary, userProgress, allWords = [], on
   };
 
   const modes = [
-    { id: 'flashcard', label: 'Thẻ nhớ' },
-    { id: 'fill', label: 'Điền từ' },
     { id: 'choice', label: 'Trắc nghiệm' },
-    { id: 'listen-fill', label: 'Nghe & điền' },
     { id: 'listen-choice', label: 'Nghe & trắc nghiệm' }
   ];
 
@@ -176,50 +171,7 @@ export default function ReviewCard({ vocabulary, userProgress, allWords = [], on
         <div className="text-center text-white">
           {!submitted ? (
             <>
-              {quizMode === 'flashcard' ? (
-                <>
-                  <p className="text-sm text-blue-200 mb-3">Câu đục lỗ:</p>
-                  <p className="text-2xl font-bold break-words mb-4">{vocabulary.cloze_sentence}</p>
-                  <button
-                    onClick={() => setSubmitted(true)}
-                    className="rounded-full bg-white/20 px-5 py-2 text-sm font-semibold hover:bg-white/30 transition"
-                  >
-                    Xem đáp án
-                  </button>
-                </>
-              ) : quizMode === 'fill' || quizMode === 'listen-fill' ? (
-                <>
-                  <p className="text-sm text-blue-200 mb-3">
-                    {quizMode === 'listen-fill' ? 'Nghe từ và điền vào chỗ trống:' : 'Điền từ vào chỗ trống:'}
-                  </p>
-                  {quizMode === 'listen-fill' ? (
-                    <p className="text-lg font-semibold break-words mb-4">{vocabulary.cloze_sentence}</p>
-                  ) : (
-                    <p className="text-lg font-semibold break-words mb-4">{vocabulary.cloze_sentence}</p>
-                  )}
-                  {quizMode === 'listen-fill' && (
-                    <div className="flex justify-center gap-3 mb-4">
-                      <button onClick={() => playAudio(audioUs)} className="rounded-full bg-white/20 px-5 py-2 text-sm font-semibold hover:bg-white/30">🔊 US</button>
-                      <button onClick={() => playAudio(audioUk)} className="rounded-full bg-white/20 px-5 py-2 text-sm font-semibold hover:bg-white/30">🔊 UK</button>
-                    </div>
-                  )}
-                  <input
-                    value={answer}
-                    onChange={e => setAnswer(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleSubmitAnswer(); }}
-                    placeholder="Gõ đáp án..."
-                    className="w-full rounded-xl border-0 px-4 py-3 text-slate-900 text-center text-lg font-semibold outline-none"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleSubmitAnswer}
-                    disabled={!answer.trim()}
-                    className="mt-4 rounded-full bg-white/20 px-6 py-2 text-sm font-semibold hover:bg-white/30 transition disabled:opacity-40"
-                  >
-                    Kiểm tra
-                  </button>
-                </>
-              ) : quizMode === 'listen-choice' ? (
+              {quizMode === 'listen-choice' ? (
                 <>
                   <p className="text-sm text-blue-200 mb-3">Nghe từ và chọn đáp án đúng:</p>
                   <div className="flex justify-center gap-3 mb-5">
@@ -269,17 +221,6 @@ export default function ReviewCard({ vocabulary, userProgress, allWords = [], on
                   </button>
                 </>
               )}
-            </>
-          ) : quizMode === 'flashcard' ? (
-            <>
-              <p className="text-3xl font-bold mb-2">{vocabulary.word}</p>
-              <p className="text-lg italic text-blue-100 mb-2">/{vocabulary.phonetic}/</p>
-              <div className="flex justify-center gap-3 mb-3">
-                <button onClick={(e) => { e.stopPropagation(); playAudio(audioUs); }} className="rounded-full bg-blue-400 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-300">🔊 US</button>
-                <button onClick={(e) => { e.stopPropagation(); playAudio(audioUk); }} className="rounded-full bg-red-400 px-3 py-1 text-xs font-semibold text-white hover:bg-red-300">🔊 UK</button>
-              </div>
-              <p className="text-base text-blue-100 mb-3">{vocabulary.meaning}</p>
-              <p className="text-sm text-blue-200 italic">VD: {vocabulary.example_sentence}</p>
             </>
           ) : (
             <>
