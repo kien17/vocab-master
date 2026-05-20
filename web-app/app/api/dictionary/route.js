@@ -42,15 +42,24 @@ export async function GET(request) {
     let aiData = await generateVocabularyData(searchTerm);
     const dictData = await fetchDictionaryPronunciation(searchTerm).catch(() => null);
 
+    const aiExamples = aiData.examples || [];
+    const firstExample = aiExamples[0] || {};
     const fallbackMeaning = translatedMeaning || aiData.meaning || aiData.meanings?.[0]?.definition || '';
-    const fallbackExample = aiData.example_sentence || aiData.meanings?.[0]?.example || searchTerm;
+    const fallbackExample = firstExample.sentence || aiData.example_sentence || aiData.meanings?.[0]?.example || searchTerm;
 
     const conciseMeaning = {
       partOfSpeech: 'short',
       definition: translatedMeaning || aiData.meaning || searchTerm,
       example: fallbackExample,
-      cloze: aiData.cloze_sentence || ''
+      cloze: firstExample.cloze || aiData.cloze_sentence || ''
     };
+
+    const exampleMeanings = aiExamples.slice(1).map(ex => ({
+      partOfSpeech: 'example',
+      definition: '',
+      example: ex.sentence,
+      cloze: ex.cloze
+    }));
 
     const rawMeanings = dictData?.meanings?.length > 0
       ? dictData.meanings
@@ -58,7 +67,7 @@ export async function GET(request) {
         ? aiData.meanings
         : [];
 
-    const meanings = [conciseMeaning, ...rawMeanings];
+    const meanings = [conciseMeaning, ...exampleMeanings, ...rawMeanings];
 
     const usingAi = !!process.env.GEMINI_API_KEY;
 
@@ -71,7 +80,7 @@ export async function GET(request) {
       meanings,
       meaning: fallbackMeaning || `Dịch: ${translatedMeaning || searchTerm}`,
       example_sentence: fallbackExample,
-      cloze_sentence: aiData.cloze_sentence || '',
+      cloze_sentence: firstExample.cloze || aiData.cloze_sentence || '',
       learning_level: 0,
       aiGenerated: usingAi
     };

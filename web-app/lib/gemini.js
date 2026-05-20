@@ -20,6 +20,17 @@ const createFallbackData = async (word, fallback = {}) => {
   const firstExample = fallback.example_sentence || fallback.meanings?.[0]?.example || `"${normalizedWord}" - ${translation || 'no translation available'}`;
   const firstCloze = fallback.cloze_sentence || fallback.meanings?.[0]?.cloze || makeCloze(firstExample, normalizedWord);
 
+  const examples = (fallback.meanings || [])
+    .filter(m => m.example)
+    .map(m => ({
+      sentence: m.example,
+      cloze: m.cloze || makeCloze(m.example, normalizedWord)
+    }));
+
+  if (examples.length === 0) {
+    examples.push({ sentence: firstExample, cloze: firstCloze });
+  }
+
   return {
     phonetic: fallback.phonetic || '',
     audio_us: fallback.audio_us || '',
@@ -27,7 +38,8 @@ const createFallbackData = async (word, fallback = {}) => {
     audio_url: fallback.audio_url || '',
     meaning: firstMeaning || `Chưa có nghĩa tự động, hãy nhập thêm thông tin cho từ/cụm từ ${normalizedWord}.`,
     example_sentence: firstExample,
-    cloze_sentence: firstCloze
+    cloze_sentence: firstCloze,
+    examples
   };
 };
 
@@ -225,10 +237,9 @@ export async function generateVocabularyData(word) {
 Trả về một JSON object chứa thông tin từ/cụm từ tiếng Anh sau đây. Định dạng phải là JSON hợp lệ:
 
 Yêu cầu:
-1. phonetic: Phiên âm IPA của từ hoặc cụm từ (nếu là cụm từ thì ghi cho toàn bộ cụm từ)
-2. meaning: Nghĩa tiếng Việt (ngắn gọn, 1-2 dòng)
-3. example_sentence: Câu ví dụ tiếng Anh chuẩn IELTS 7.5
-4. cloze_sentence: Câu ví dụ nhưng thay thế từ "${word}" bằng "___"
+1. phonetic: Phiên âm IPA
+2. meaning: Nghĩa tiếng Việt (ngắn gọn)
+3. examples: Mảng chứa 3 câu ví dụ tiếng Anh chuẩn IELTS, mỗi câu kèm câu điền từ thay "${word}" bằng "___"
 
 Từ/cụm từ: "${word}"
 
@@ -237,8 +248,11 @@ Ví dụ format:
 {
   "phonetic": "/əˈkʌrəns/",
   "meaning": "Sự xuất hiện, sự xảy ra",
-  "example_sentence": "The occurrence of natural disasters has increased significantly.",
-  "cloze_sentence": "The ___ of natural disasters has increased significantly."
+  "examples": [
+    { "sentence": "The occurrence of natural disasters has increased significantly.", "cloze": "The ___ of natural disasters has increased significantly." },
+    { "sentence": "This is a common occurrence in daily life.", "cloze": "This is a common ___ in daily life." },
+    { "sentence": "We must reduce the occurrence of such errors.", "cloze": "We must reduce the ___ of such errors." }
+  ]
 }
     `;
 

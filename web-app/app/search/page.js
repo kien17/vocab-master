@@ -269,11 +269,17 @@ export default function SearchPage() {
                         {item.meaning && (
                           <p className="mt-3 text-slate-700 font-semibold">Nghĩa: {item.meaning}</p>
                         )}
-                        {item.example_sentence && (
-                          <p className="mt-2 text-slate-500 italic">Ví dụ: {item.example_sentence}</p>
-                        )}
-                        {item.cloze_sentence && (
-                          <p className="mt-2 text-slate-500">Câu điền: {item.cloze_sentence}</p>
+                        {(item.meanings || []).filter(m => m.partOfSpeech === 'example').map((ex, i) => (
+                          <div key={i} className="mt-2 pl-3 border-l-2 border-blue-200">
+                            <p className="text-slate-500 italic">Ví dụ {i + 1}: {ex.example}</p>
+                            <p className="text-slate-500 text-sm">Câu điền: {ex.cloze}</p>
+                          </div>
+                        ))}
+                        {!item.meanings?.some(m => m.partOfSpeech === 'example') && item.example_sentence && (
+                          <>
+                            <p className="mt-2 text-slate-500 italic">Ví dụ: {item.example_sentence}</p>
+                            {item.cloze_sentence && <p className="mt-2 text-slate-500">Câu điền: {item.cloze_sentence}</p>}
+                          </>
                         )}
                         {item.meanings && item.meanings.length > 0 ? (
                           <div className="space-y-3 mt-4">
