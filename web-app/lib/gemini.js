@@ -202,6 +202,8 @@ export const fetchDictionaryPronunciation = async (word) => {
   }
 };
 
+const geminiRateLimit = { lastCall: 0, minInterval: 2000 };
+
 /**
  * Gọi Google Gemini API để lấy thông tin từ vựng
  */
@@ -210,6 +212,13 @@ export async function generateVocabularyData(word) {
     const dictData = await fetchDictionaryPronunciation(word);
     return createFallbackData(word, dictData || {});
   }
+
+  const now = Date.now();
+  if (now - geminiRateLimit.lastCall < geminiRateLimit.minInterval) {
+    const dictData = await fetchDictionaryPronunciation(word);
+    return createFallbackData(word, dictData || {});
+  }
+  geminiRateLimit.lastCall = now;
 
   try {
     const prompt = `
@@ -258,7 +267,9 @@ Ví dụ format:
     const vocabularyData = JSON.parse(jsonMatch[0]);
     return vocabularyData;
   } catch (error) {
-    console.error('Error calling Gemini API:', error);
+    if (error.status !== 429) {
+      console.error('Error calling Gemini API:', error.message);
+    }
     const dictData = await fetchDictionaryPronunciation(word);
     return createFallbackData(word, dictData || {});
   }
