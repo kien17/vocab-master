@@ -33,6 +33,26 @@ const createFallbackData = async (word, fallback = {}) => {
 
 const translationCache = new Map();
 
+const fetchLibreTranslation = async (text) => {
+  try {
+    const response = await fetch('https://libretranslate.com/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        q: text,
+        source: 'en',
+        target: 'vi',
+        format: 'text',
+      }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.translatedText || null;
+  } catch {
+    return null;
+  }
+};
+
 export const fetchVietnameseTranslation = async (text) => {
   try {
     const normalizedText = text.trim();
@@ -45,24 +65,26 @@ export const fetchVietnameseTranslation = async (text) => {
       return cached;
     }
 
-    const encodedText = encodeURIComponent(normalizedText);
-    const langpair = encodeURIComponent('en|vi');
-    const response = await fetch(
-      `https://api.mymemory.translated.net/get?q=${encodedText}&langpair=${langpair}`,
-      {
-        headers: {
-          Accept: 'application/json'
-        }
-      }
-    );
+    let result = await fetchLibreTranslation(normalizedText);
 
-    if (!response.ok) {
-      translationCache.set(normalizedText, null);
-      return null;
+    if (!result) {
+      const encodedText = encodeURIComponent(normalizedText);
+      const langpair = encodeURIComponent('en|vi');
+      const response = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodedText}&langpair=${langpair}`,
+        {
+          headers: {
+            Accept: 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        result = data?.responseData?.translatedText || null;
+      }
     }
 
-    const data = await response.json();
-    const result = data?.responseData?.translatedText || null;
     translationCache.set(normalizedText, result);
     return result;
   } catch (error) {
