@@ -164,9 +164,14 @@ export default function SearchPage() {
     playPhraseAudio(audioUrl, text);
   };
 
+  const escapeRegex = (string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  };
+
   const autoFillCloze = () => {
     if (!exampleSentence.trim() || !word.trim()) return;
-    const regex = new RegExp(`\\b${word.trim()}\\b`, 'gi');
+    const escapedWord = escapeRegex(word.trim());
+    const regex = new RegExp(`\\b${escapedWord}\\b`, 'gi');
     setClozeSentence(exampleSentence.replace(regex, '___'));
   };
 

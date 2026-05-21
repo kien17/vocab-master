@@ -164,6 +164,10 @@ async function saveWord(word) {
   }
 }
 
+function escapeRegex(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function saveManualWord() {
   const word = document.getElementById('word').value.trim();
   const phonetic = document.getElementById('phonetic').value.trim();
@@ -182,7 +186,7 @@ async function saveManualWord() {
         phonetic: phonetic || '',
         meaning,
         example_sentence: example || '',
-        cloze_sentence: example ? example.replace(new RegExp(`\\b${word}\\b`, 'gi'), '___') : '',
+        cloze_sentence: example ? example.replace(new RegExp(`\\b${escapeRegex(word)}\\b`, 'gi'), '___') : '',
         userId
       })
     });

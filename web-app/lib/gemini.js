@@ -189,7 +189,7 @@ export const fetchDictionaryPronunciation = async (word) => {
           const definition = translatedDefinition || englishDefinition;
           const example = def.example || '';
           const cloze = example
-            ? example.replace(new RegExp(`\\b${word.trim()}\\b`, 'gi'), '___')
+            ? example.replace(new RegExp(`\\b${escapeRegex(word.trim())}\\b`, 'gi'), '___')
             : '';
 
           meanings.push({
