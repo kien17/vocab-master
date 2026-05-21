@@ -24,6 +24,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('openAppBtn').addEventListener('click', () => {
     chrome.tabs.create({ url: API_BASE_URL });
   });
+  document.getElementById('word').addEventListener('input', (e) => {
+    const posSelect = document.getElementById('partOfSpeech');
+    const wordVal = e.target.value.trim();
+    if (wordVal.split(/\s+/).length > 1) {
+      if (!posSelect.value) posSelect.value = 'other';
+    } else {
+      if (posSelect.value === 'other') posSelect.value = '';
+    }
+  });
   document.getElementById('toggleManualBtn').addEventListener('click', () => {
     const form = document.getElementById('manualForm');
     form.classList.toggle('hidden');
@@ -168,11 +177,17 @@ function escapeRegex(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function autoDetectPos(word) {
+  return word.split(/\s+/).length > 1 ? 'other' : '';
+}
+
 async function saveManualWord() {
   const word = document.getElementById('word').value.trim();
   const phonetic = document.getElementById('phonetic').value.trim();
   const meaning = document.getElementById('meaning').value.trim();
   const example = document.getElementById('example').value.trim();
+  let partOfSpeech = document.getElementById('partOfSpeech').value;
+  if (!partOfSpeech) partOfSpeech = autoDetectPos(word);
 
   if (!word || !meaning) { showStatus('Từ và nghĩa là bắt buộc.', 'error'); return; }
 
@@ -185,6 +200,7 @@ async function saveManualWord() {
         word,
         phonetic: phonetic || '',
         meaning,
+        part_of_speech: partOfSpeech,
         example_sentence: example || '',
         cloze_sentence: example ? example.replace(new RegExp(`\\b${escapeRegex(word)}\\b`, 'gi'), '___') : '',
         userId
@@ -197,6 +213,7 @@ async function saveManualWord() {
     document.getElementById('phonetic').value = '';
     document.getElementById('meaning').value = '';
     document.getElementById('example').value = '';
+    document.getElementById('partOfSpeech').value = '';
 
     const savedAt = new Date().toISOString();
     const ls = { word, timestamp: savedAt };

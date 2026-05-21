@@ -15,6 +15,7 @@ export default function SearchPage() {
   const [word, setWord] = useState('');
   const [meaning, setMeaning] = useState('');
   const [phonetic, setPhonetic] = useState('');
+  const [partOfSpeech, setPartOfSpeech] = useState('');
   const [exampleSentence, setExampleSentence] = useState('');
   const [clozeSentence, setClozeSentence] = useState('');
   const [selectedMeanings, setSelectedMeanings] = useState({});
@@ -27,6 +28,14 @@ export default function SearchPage() {
     }
     setUserId(storedUserId);
   }, [router]);
+
+  useEffect(() => {
+    if (word.trim().split(/\s+/).length > 1) {
+      setPartOfSpeech('other');
+    } else if (partOfSpeech === 'other') {
+      setPartOfSpeech('');
+    }
+  }, [word]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -69,6 +78,7 @@ export default function SearchPage() {
         word,
         phonetic,
         meaning,
+        part_of_speech: partOfSpeech,
         example_sentence: exampleSentence,
         cloze_sentence: clozeSentence,
         userId
@@ -79,6 +89,7 @@ export default function SearchPage() {
         setWord('');
         setMeaning('');
         setPhonetic('');
+        setPartOfSpeech('');
         setExampleSentence('');
         setClozeSentence('');
         setResults([response.data.vocabulary, ...results]);
@@ -373,6 +384,25 @@ export default function SearchPage() {
                     rows={3}
                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Từ loại</label>
+                  <select
+                    value={partOfSpeech}
+                    onChange={(event) => setPartOfSpeech(event.target.value)}
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 bg-white"
+                  >
+                    <option value="">-- Chọn từ loại --</option>
+                    <option value="noun">Danh từ (Noun)</option>
+                    <option value="verb">Động từ (Verb)</option>
+                    <option value="adjective">Tính từ (Adjective)</option>
+                    <option value="adverb">Trạng từ (Adverb)</option>
+                    <option value="preposition">Giới từ (Preposition)</option>
+                    <option value="conjunction">Liên từ (Conjunction)</option>
+                    <option value="pronoun">Đại từ (Pronoun)</option>
+                    <option value="interjection">Thán từ (Interjection)</option>
+                    <option value="other">Khác (cụm từ / idiom / ...)</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Câu ví dụ</label>

@@ -56,6 +56,7 @@ export async function POST(request) {
         word: normalizedWord,
         phonetic: vocabularyData.phonetic || '',
         meaning: vocabularyData.meaning,
+        part_of_speech: '',
         example_sentence: vocabularyData.example_sentence,
         cloze_sentence: vocabularyData.cloze_sentence,
         audio_us: vocabularyData.audio_us || '',

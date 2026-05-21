@@ -13,6 +13,7 @@ export async function POST(request) {
       word,
       phonetic,
       meaning,
+      part_of_speech,
       example_sentence,
       cloze_sentence,
       userId
@@ -66,6 +67,7 @@ export async function POST(request) {
         word: normalizedWord,
         phonetic: phonetic || '',
         meaning,
+        part_of_speech: part_of_speech || '',
         example_sentence: exampleText,
         cloze_sentence: clozeText,
         audio_us: '',

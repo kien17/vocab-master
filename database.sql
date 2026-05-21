@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS vocabulary (
   word TEXT NOT NULL UNIQUE,
   phonetic TEXT,
   meaning TEXT NOT NULL,
+  part_of_speech TEXT DEFAULT '',
   example_sentence TEXT NOT NULL,
   cloze_sentence TEXT NOT NULL,
   audio_us TEXT,
