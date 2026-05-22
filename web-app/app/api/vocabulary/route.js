@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { supabase } from '../../../lib/supabase';
+import { generateVocabularyData } from '../../../lib/gemini';
 
 function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -27,9 +28,31 @@ export async function POST(request) {
     }
 
     const normalizedWord = word.toLowerCase().trim();
-    const exampleText = example_sentence?.trim() || `The ${normalizedWord} is an important word.`;
-    const regex = new RegExp(escapeRegExp(normalizedWord), 'gi');
-    const clozeText = cloze_sentence?.trim() || exampleText.replace(regex, '___');
+
+    let exampleText = example_sentence?.trim();
+    let clozeText = cloze_sentence?.trim();
+
+    if (!exampleText) {
+      try {
+        const aiData = await generateVocabularyData(normalizedWord);
+        exampleText = aiData.examples?.[0]?.sentence || aiData.example_sentence || '';
+        if (exampleText && !clozeText) {
+          const regex = new RegExp(escapeRegExp(normalizedWord), 'gi');
+          clozeText = exampleText.replace(regex, '___');
+        }
+      } catch (error) {
+        console.error('Error generating vocabulary data:', error.message);
+      }
+    }
+
+    if (!exampleText) {
+      exampleText = `The ${normalizedWord} is an important word.`;
+    }
+
+    if (!clozeText) {
+      const regex = new RegExp(escapeRegExp(normalizedWord), 'gi');
+      clozeText = exampleText.replace(regex, '___');
+    }
 
     const { data: existingVocab } = await supabase
       .from('vocabulary')
